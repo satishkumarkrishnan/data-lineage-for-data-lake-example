@@ -55,6 +55,18 @@ resource aws_security_group "sg_neptune_db" {
   vpc_id = aws_vpc.main.id
 }
 
+## Create Neptune DB cluster and instance
+resource "aws_neptune_cluster_parameter_group" "neptune1" {
+  family      = "neptune1.3"
+  name        = "neptune1"
+  description = "neptune cluster parameter group"
+
+  parameter {
+    name  = "neptune_enable_audit_log"
+    value = 1
+    apply_method = "pending-reboot"
+  }
+}
 resource "aws_neptune_cluster" "default" {
   cluster_identifier                  = "data-lineage-neptune-cluster"
   skip_final_snapshot                 = true
@@ -63,6 +75,7 @@ resource "aws_neptune_cluster" "default" {
   neptune_subnet_group_name = aws_neptune_subnet_group.default.name
   vpc_security_group_ids = [aws_security_group.sg_neptune_db.id]
   port = local.neptune_db_port
+  neptune_cluster_parameter_group_name = "${aws_neptune_cluster_parameter_group.neptune1.name}"
 }
 
 resource "aws_neptune_cluster_instance" "data_lineage_instance" {
@@ -72,4 +85,15 @@ resource "aws_neptune_cluster_instance" "data_lineage_instance" {
   instance_class      = "db.t3.medium"
   neptune_subnet_group_name = aws_neptune_subnet_group.default.name
   port = local.neptune_db_port
+  neptune_parameter_group_name = "${aws_neptune_parameter_group.example.name}"
+}
+
+resource "aws_neptune_parameter_group" "example" {
+  family = "neptune1.3"
+  name   = "example"
+
+  parameter {
+    name  = "neptune_query_timeout"
+    value = "25"
+  }
 }
